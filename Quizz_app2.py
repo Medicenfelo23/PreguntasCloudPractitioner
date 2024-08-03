@@ -6,12 +6,13 @@ import random
 # Leer preguntas desde el archivo Excel
 def load_questions_from_excel(file_path):
     df = pd.read_excel(file_path)
+    print("Columnas del archivo Excel:", df.columns)  # Verificar nombres de columnas
     questions = []
     for _, row in df.iterrows():
         question = {
             'question': row['Pregunta'],
             'answers': {'a': row['a'], 'b': row['b'], 'c': row['c'], 'd': row['d'], 'e': row['e']},
-            'correct': row['Correcta']
+            'correct': row['Correcta'].strip().lower()  # Convertir a minúsculas
         }
         questions.append(question)
     return questions
@@ -57,6 +58,11 @@ class QuizApp:
         question = questions[self.current_question]
         if key == question['correct']:
             self.score += 1
+            messagebox.showinfo("Respuesta", "¡Correcto!")
+        else:
+            correct_key = question['correct']
+            correct_answer = question['answers'][correct_key]
+            messagebox.showinfo("Respuesta", f"Incorrecto. La respuesta correcta es {correct_key.upper()}: {correct_answer}")
         for button in self.answer_buttons.values():
             button.config(state=tk.DISABLED)
         self.next_button.config(state=tk.NORMAL)
