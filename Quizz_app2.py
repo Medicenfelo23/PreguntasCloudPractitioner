@@ -6,12 +6,15 @@ import random
 # Leer preguntas desde el archivo Excel
 def load_questions_from_excel(file_path):
     df = pd.read_excel(file_path)
+    print("Columnas del archivo Excel:", df.columns)  # Verificar nombres de columnas
     questions = []
     for _, row in df.iterrows():
+        # Manejar respuestas correctas múltiples separadas por comas
+        correct_keys = [key.strip().lower() for key in row['Correcta'].split(',')]
         question = {
             'question': row['Pregunta'],
             'answers': {'a': row['a'], 'b': row['b'], 'c': row['c'], 'd': row['d'], 'e': row['e']},
-            'correct': row['Correcta']
+            'correct': correct_keys
         }
         questions.append(question)
     return questions
@@ -55,8 +58,16 @@ class QuizApp:
 
     def check_answer(self, key):
         question = questions[self.current_question]
-        if key == question['correct']:
+        correct_keys = [k.lower() for k in question['correct']]
+        
+        if key in correct_keys:
             self.score += 1
+            messagebox.showinfo("Respuesta", "¡Correcto!")
+        else:
+            # Mostrar respuestas correctas múltiples si hay alguna
+            correct_answers = [f"{k.upper()}: {question['answers'].get(k, 'No disponible')}" for k in correct_keys]
+            messagebox.showinfo("Respuesta", f"Incorrecto. Las respuestas correctas son: {', '.join(correct_answers)}")
+        
         for button in self.answer_buttons.values():
             button.config(state=tk.DISABLED)
         self.next_button.config(state=tk.NORMAL)
