@@ -65,6 +65,10 @@ class QuizApp:
         self.next_button.pack(pady=20)
         self.next_button.config(state=tk.DISABLED)
 
+        # Botón para reiniciar contadores
+        self.reset_button = tk.Button(self.root, text="Reiniciar Contadores", font=("Arial", 14), command=self.reset_counters)
+        self.reset_button.pack(pady=20)
+
         # Mostrar la primera pregunta
         self.display_question()
 
@@ -114,8 +118,13 @@ class QuizApp:
                                                 f"Respuestas incorrectas: {self.incorrect_count}")
             self.root.quit()
 
+    def reset_counters(self):
+        self.correct_count = 0
+        self.incorrect_count = 0
+        self.correct_label.config(text=f"Respuestas correctas: {self.correct_count}")
+        self.incorrect_label.config(text=f"Respuestas incorrectas: {self.incorrect_count}")
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = QuizApp(root)
     root.mainloop()
-    
