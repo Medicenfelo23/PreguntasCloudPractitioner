@@ -9,7 +9,6 @@ def load_questions_from_excel(file_path):
     print("Columnas del archivo Excel:", df.columns)  # Verificar nombres de columnas
     questions = []
     for _, row in df.iterrows():
-        # Mapear las respuestas a las letras correspondientes
         answers = {
             'a': row['a'],
             'b': row['b'],
@@ -17,11 +16,7 @@ def load_questions_from_excel(file_path):
             'd': row['d'],
             'e': row['e']
         }
-        # Convertir las respuestas correctas a minúsculas
-        correct_keys = [key.strip().lower() for key in row['Correcta'].split(',')]
-        print(f"Pregunta: {row['Pregunta']}")
-        print(f"Respuestas: {answers}")
-        print(f"Correcta: {correct_keys}")
+        correct_keys = [key.strip().lower() for key in row['Correcta'].split(',')]  # Convertir a minúsculas y separar por comas
         question = {
             'question': row['Pregunta'],
             'answers': answers,
@@ -58,14 +53,12 @@ class QuizApp:
         self.incorrect_label = tk.Label(self.root, text="Respuestas incorrectas: 0", font=("Arial", 14))
         self.incorrect_label.pack(pady=5)
 
-        # Casillas de verificación para las respuestas
-        self.check_vars = {}
+        # Botones de opción para las respuestas
+        self.check_vars = {key: tk.BooleanVar() for key in ['a', 'b', 'c', 'd', 'e']}
         self.check_buttons = {}
         for key in ['a', 'b', 'c', 'd', 'e']:
-            var = tk.BooleanVar()
-            check_button = tk.Checkbutton(self.root, text="", font=("Arial", 14), variable=var)
+            check_button = tk.Checkbutton(self.root, text="", font=("Arial", 14), variable=self.check_vars[key], onvalue=True, offvalue=False)
             check_button.pack(pady=5, fill="both", expand=True)
-            self.check_vars[key] = var
             self.check_buttons[key] = check_button
 
         # Botón para enviar respuesta
@@ -92,6 +85,7 @@ class QuizApp:
                 button.config(text=f"{key.upper()}: {question['answers'][key]}", state=tk.NORMAL)
             else:
                 button.config(text="", state=tk.DISABLED)
+            self.check_vars[key].set(False)
         self.submit_button.config(state=tk.NORMAL)
         self.next_button.config(state=tk.DISABLED)
 
@@ -101,17 +95,17 @@ class QuizApp:
         correct_keys = question['correct']
 
         print(f"Pregunta: {question['question']}")
-        print(f"Respuesta seleccionada: {selected_keys}")
+        print(f"Respuestas seleccionadas: {selected_keys}")
         print(f"Respuestas correctas: {correct_keys}")
 
-        # Comprobar si las respuestas seleccionadas coinciden exactamente con las respuestas correctas
+        # Comprobar si las respuestas seleccionadas son correctas
         if sorted(selected_keys) == sorted(correct_keys):
             self.score += 1
             self.correct_count += 1
             messagebox.showinfo("Respuesta", "¡Correcto!")
         else:
             self.incorrect_count += 1
-            correct_answers = [f"{k.upper()}: {question['answers'].get(k, 'No disponible')}" for k in correct_keys]
+            correct_answers = [f"{k.upper()}: {question['answers'][k]}" for k in correct_keys]
             messagebox.showinfo("Respuesta", f"Incorrecto. Las respuestas correctas son: {', '.join(correct_answers)}")
 
         # Actualizar los contadores en la interfaz
