@@ -6,12 +6,26 @@ import random
 # Leer preguntas desde el archivo Excel
 def load_questions_from_excel(file_path):
     df = pd.read_excel(file_path)
+    print("Columnas del archivo Excel:", df.columns)  # Verificar nombres de columnas
     questions = []
     for _, row in df.iterrows():
+        # Mapear las respuestas a las letras correspondientes
+        answers = {
+            'a': row['a'],
+            'b': row['b'],
+            'c': row['c'],
+            'd': row['d'],
+            'e': row['e']
+        }
+        # Convertir las respuestas correctas a minúsculas
+        correct_keys = [key.strip().lower() for key in row['Correcta'].split(',')]
+        print(f"Pregunta: {row['Pregunta']}")
+        print(f"Respuestas: {answers}")
+        print(f"Correcta: {correct_keys}")
         question = {
             'question': row['Pregunta'],
-            'answers': {'a': row['a'], 'b': row['b'], 'c': row['c'], 'd': row['d'], 'e': row['e']},
-            'correct': row['Correcta']
+            'answers': answers,
+            'correct': correct_keys
         }
         questions.append(question)
     return questions
@@ -28,37 +42,85 @@ class QuizApp:
         self.root.title("Quiz App")
         self.score = 0
         self.current_question = 0
+        self.correct_count = 0
+        self.incorrect_count = 0
         self.create_widgets()
 
     def create_widgets(self):
+        # Etiqueta para la pregunta
         self.question_label = tk.Label(self.root, text="", font=("Arial", 16), wraplength=400)
         self.question_label.pack(pady=20)
 
-        self.answer_buttons = {}
-        for key in ['a', 'b', 'c', 'd', 'e']:
-            button = tk.Button(self.root, text="", font=("Arial", 14), command=lambda k=key: self.check_answer(k))
-            button.pack(pady=5, fill="both", expand=True)
-            self.answer_buttons[key] = button
+        # Etiquetas para los contadores
+        self.correct_label = tk.Label(self.root, text="Respuestas correctas: 0", font=("Arial", 14))
+        self.correct_label.pack(pady=5)
 
+        self.incorrect_label = tk.Label(self.root, text="Respuestas incorrectas: 0", font=("Arial", 14))
+        self.incorrect_label.pack(pady=5)
+
+        # Casillas de verificación para las respuestas
+        self.check_vars = {}
+        self.check_buttons = {}
+        for key in ['a', 'b', 'c', 'd', 'e']:
+            var = tk.BooleanVar()
+            check_button = tk.Checkbutton(self.root, text="", font=("Arial", 14), variable=var)
+            check_button.pack(pady=5, fill="both", expand=True)
+            self.check_vars[key] = var
+            self.check_buttons[key] = check_button
+
+        # Botón para enviar respuesta
+        self.submit_button = tk.Button(self.root, text="Enviar Respuesta", font=("Arial", 14), command=self.check_answer)
+        self.submit_button.pack(pady=20)
+
+        # Botón para la siguiente pregunta
         self.next_button = tk.Button(self.root, text="Siguiente", font=("Arial", 14), command=self.next_question)
         self.next_button.pack(pady=20)
         self.next_button.config(state=tk.DISABLED)
 
+        # Botón para reiniciar contadores
+        self.reset_button = tk.Button(self.root, text="Reiniciar Contadores", font=("Arial", 14), command=self.reset_counters)
+        self.reset_button.pack(pady=20)
+
+        # Mostrar la primera pregunta
         self.display_question()
 
     def display_question(self):
         question = questions[self.current_question]
         self.question_label.config(text=question['question'])
-        for key, button in self.answer_buttons.items():
-            button.config(text=f"{key.upper()}. {question['answers'][key]}", state=tk.NORMAL)
+        for key, button in self.check_buttons.items():
+            if key in question['answers']:
+                button.config(text=f"{key.upper()}: {question['answers'][key]}", state=tk.NORMAL)
+            else:
+                button.config(text="", state=tk.DISABLED)
+        self.submit_button.config(state=tk.NORMAL)
         self.next_button.config(state=tk.DISABLED)
 
-    def check_answer(self, key):
+    def check_answer(self):
         question = questions[self.current_question]
-        if key == question['correct']:
+        selected_keys = [key for key, var in self.check_vars.items() if var.get()]
+        correct_keys = question['correct']
+
+        print(f"Pregunta: {question['question']}")
+        print(f"Respuesta seleccionada: {selected_keys}")
+        print(f"Respuestas correctas: {correct_keys}")
+
+        # Comprobar si las respuestas seleccionadas coinciden exactamente con las respuestas correctas
+        if sorted(selected_keys) == sorted(correct_keys):
             self.score += 1
-        for button in self.answer_buttons.values():
+            self.correct_count += 1
+            messagebox.showinfo("Respuesta", "¡Correcto!")
+        else:
+            self.incorrect_count += 1
+            correct_answers = [f"{k.upper()}: {question['answers'].get(k, 'No disponible')}" for k in correct_keys]
+            messagebox.showinfo("Respuesta", f"Incorrecto. Las respuestas correctas son: {', '.join(correct_answers)}")
+
+        # Actualizar los contadores en la interfaz
+        self.correct_label.config(text=f"Respuestas correctas: {self.correct_count}")
+        self.incorrect_label.config(text=f"Respuestas incorrectas: {self.incorrect_count}")
+
+        for button in self.check_buttons.values():
             button.config(state=tk.DISABLED)
+        self.submit_button.config(state=tk.DISABLED)
         self.next_button.config(state=tk.NORMAL)
 
     def next_question(self):
@@ -66,8 +128,16 @@ class QuizApp:
         if self.current_question < len(questions):
             self.display_question()
         else:
-            messagebox.showinfo("Fin del Quiz", f"Tu puntuación es: {self.score}/{len(questions)}")
+            messagebox.showinfo("Fin del Quiz", f"Tu puntuación es: {self.score}/{len(questions)}\n"
+                                                f"Respuestas correctas: {self.correct_count}\n"
+                                                f"Respuestas incorrectas: {self.incorrect_count}")
             self.root.quit()
+
+    def reset_counters(self):
+        self.correct_count = 0
+        self.incorrect_count = 0
+        self.correct_label.config(text=f"Respuestas correctas: {self.correct_count}")
+        self.incorrect_label.config(text=f"Respuestas incorrectas: {self.incorrect_count}")
 
 if __name__ == "__main__":
     root = tk.Tk()
